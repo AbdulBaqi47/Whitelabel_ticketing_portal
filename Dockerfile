@@ -1,8 +1,12 @@
+# -----------------------------
+# 1. PHP dependencies
+# -----------------------------
 FROM composer:2 AS vendor
 
 WORKDIR /app
 
 COPY composer.json composer.lock ./
+
 RUN composer install \
     --no-dev \
     --no-interaction \
@@ -11,19 +15,50 @@ RUN composer install \
     --optimize-autoloader \
     --no-scripts
 
+
+# -----------------------------
+# 2. Frontend assets
+# -----------------------------
+FROM node:22-alpine AS frontend
+
+WORKDIR /app
+
+COPY package.json ./
+
+# If package-lock.json exists, prefer npm ci
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+
+# -----------------------------
+# 3. Laravel runtime
+# -----------------------------
 FROM php:8.4-cli-bookworm
 
 WORKDIR /var/www/html
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libzip-dev \
-    && docker-php-ext-install pdo_mysql zip \
+    && apt-get install -y --no-install-recommends \
+        libzip-dev \
+    && docker-php-ext-install \
+        pdo_mysql \
+        zip \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=vendor /app/vendor ./vendor
 COPY . .
 
-RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+COPY --from=frontend /app/public/build ./public/build
+
+RUN mkdir -p \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
 USER www-data
