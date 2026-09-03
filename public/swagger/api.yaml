@@ -1,0 +1,4054 @@
+openapi: 3.0.0
+info:
+  title: Book Air Ticket.pk
+  description: Comprehensive API's For Flight Booking And Management System
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: API base URL
+
+tags:
+  - name: Authentication
+  - name: User
+  - name: Settings
+  - name: Flight
+  - name: Booking
+  - name: Organization
+  - name: Dashboard
+  - name: Financial
+  - name: References
+  - name: Bank Accounts
+  - name: Connectors
+  - name: Suppliers
+  - name: Airlines
+  - name: Airports
+  - name: Countries
+  - name: Cities
+  - name: News & Alerts
+  - name: Margins
+  - name: Agents
+  - name: Refunds
+  - name: Deposits
+  - name: Passport
+  - name: Account
+  - name: Miscellaneous
+
+paths:
+  /hello:
+    get:
+      tags: [Miscellaneous]
+      summary: Returns a greeting
+      responses:
+        "200":
+          description: A successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Hello World!
+
+  /user:
+    get:
+      tags: [User]
+      summary: Get authenticated user details
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ==================== AUTH ROUTES ====================
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  { type: string, format: email, example: "user@example.com" }
+                password:
+                  { type: string, format: password, example: "password123" }
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: "#/components/schemas/User" }
+
+  /auth/re-send:
+    post:
+      tags: [Authentication]
+      summary: Resend OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  { type: string, format: email, example: "user@example.com" }
+      responses:
+        "200":
+          description: OTP resent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /auth/verify:
+    post:
+      tags: [Authentication]
+      summary: Verify OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  { type: string, format: email, example: "user@example.com" }
+                otp: { type: string, example: "123456" }
+      responses:
+        "200":
+          description: OTP verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: "#/components/schemas/User" }
+
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  { type: string, format: email, example: "user@example.com" }
+      responses:
+        "200":
+          description: Reset link sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                email:
+                  { type: string, format: email, example: "user@example.com" }
+                password:
+                  { type: string, format: password, example: "newpassword123" }
+                password_confirmation:
+                  { type: string, format: password, example: "newpassword123" }
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user: { $ref: "#/components/schemas/User" }
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /auth/admin-change-password:
+    post:
+      tags: [Authentication]
+      summary: Change password (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password:
+                  { type: string, format: password, example: "oldpassword123" }
+                new_password:
+                  { type: string, format: password, example: "newpassword123" }
+                new_password_confirmation:
+                  { type: string, format: password, example: "newpassword123" }
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== USER PROFILE ROUTES ====================
+  /user-profile:
+    get:
+      tags: [User]
+      summary: Get user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /update-profile:
+    patch:
+      tags: [User]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /update-password:
+    patch:
+      tags: [User]
+      summary: Update user password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password: { type: string, format: password }
+                new_password: { type: string, format: password }
+                new_password_confirmation: { type: string, format: password }
+      responses:
+        "200":
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /permission-list/{uuid}:
+    get:
+      tags: [User]
+      summary: Get permission list for user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Permission list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permissions: { type: array, items: { type: string } }
+
+  /update-permission/{uuid}:
+    post:
+      tags: [User]
+      summary: Update user permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permissions: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: Permissions updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== SETTINGS ROUTES ====================
+  /setting/general-setting:
+    post:
+      tags: [Settings]
+      summary: Update general settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                settings: { type: object }
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /setting/temporary-limit:
+    post:
+      tags: [Settings]
+      summary: Set temporary limit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit: { type: number }
+                duration: { type: string }
+      responses:
+        "200":
+          description: Limit set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /setting/finanical-profile:
+    get:
+      tags: [Settings]
+      summary: Get financial profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Financial data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialProfile"
+
+  # ==================== FLIGHT ROUTES ====================
+  /flight/search:
+    post:
+      tags: [Flight]
+      summary: Search flights
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlightSearch"
+      responses:
+        "200":
+          description: Flight results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flights:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Flight" },
+                    }
+
+  /flight/pricing/{price_id}:
+    get:
+      tags: [Flight]
+      summary: Get flight pricing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: price_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Pricing info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlightPricing"
+
+  /flight/initiating/fly-jinnah:
+    post:
+      tags: [Flight]
+      summary: Initiate FlyJinnah booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlightBooking"
+      responses:
+        "200":
+          description: Booking initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /flight/baggage-selection:
+    post:
+      tags: [Flight]
+      summary: Select baggage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BaggageSelection"
+      responses:
+        "200":
+          description: Baggage selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /flight/seat-selection:
+    post:
+      tags: [Flight]
+      summary: Select seats
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeatSelection"
+      responses:
+        "200":
+          description: Seats selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /flight/meal-selection:
+    post:
+      tags: [Flight]
+      summary: Select meals
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MealSelection"
+      responses:
+        "200":
+          description: Meals selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /flight/flydubai-anci:
+    post:
+      tags: [Flight]
+      summary: FlyDubai ANCI selection
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlyDubaiAnci"
+      responses:
+        "200":
+          description: ANCI selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /flight/flydubai-seat-offers:
+    post:
+      tags: [Flight]
+      summary: FlyDubai seat offers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeatSelection"
+      responses:
+        "200":
+          description: Seat offers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /import-pnr:
+    post:
+      tags: [Flight]
+      summary: Import PNR
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pnr: { type: string }
+      responses:
+        "200":
+          description: PNR imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  # ==================== BOOKING ROUTES ====================
+  /booking/initiating:
+    post:
+      tags: [Booking]
+      summary: Initiate booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlightBooking"
+      responses:
+        "200":
+          description: Booking initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /booking/confirm-availability:
+    get:
+      tags: [Booking]
+      summary: Confirm availability
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Availability confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  available: { type: boolean }
+
+  /booking/booking-confirm:
+    post:
+      tags: [Booking]
+      summary: Confirm booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingConfirm"
+      responses:
+        "200":
+          description: Booking confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+
+  /booking/get-booking:
+    post:
+      tags: [Booking]
+      summary: Get booking details
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingDetails"
+
+  /booking/cancel-booking:
+    post:
+      tags: [Booking]
+      summary: Cancel booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+      responses:
+        "200":
+          description: Booking cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/issue-ticket:
+    post:
+      tags: [Booking]
+      summary: Issue ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+      responses:
+        "200":
+          description: Ticket issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/getById/{id}:
+    get:
+      tags: [Booking]
+      summary: Get booking by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Booking details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingDetails"
+
+  /booking/void-ticket:
+    post:
+      tags: [Booking]
+      summary: Void ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+                ticket_number: { type: string }
+      responses:
+        "200":
+          description: Ticket voided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/flydubai-void:
+    post:
+      tags: [Booking]
+      summary: Void FlyDubai booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+      responses:
+        "200":
+          description: Booking voided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/search:
+    post:
+      tags: [Booking]
+      summary: Search bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search_term: { type: string }
+                date_from: { type: string, format: date }
+                date_to: { type: string, format: date }
+      responses:
+        "200":
+          description: Booking search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/BookingDetails" },
+                    }
+
+  /booking/email-booking:
+    post:
+      tags: [Booking]
+      summary: Email booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Booking emailed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/ticket-otp-email:
+    get:
+      tags: [Booking]
+      summary: Get ticket OTP email
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/download-booking:
+    post:
+      tags: [Booking]
+      summary: Download booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+      responses:
+        "200":
+          description: Booking downloaded
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /booking/bookings-list:
+    get:
+      tags: [Booking]
+      summary: List bookings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Bookings list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/BookingDetails" },
+                    }
+
+  /booking/refund-booking:
+    post:
+      tags: [Booking]
+      summary: Refund booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string }
+      responses:
+        "200":
+          description: Booking refunded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /booking/import-booking:
+    post:
+      tags: [Booking]
+      summary: Import booking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pnr: { type: string }
+      responses:
+        "200":
+          description: Booking imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingDetails"
+
+  # ==================== BANK ACCOUNT ROUTES ====================
+  /settings/bank-account/index:
+    get:
+      tags: [Bank Accounts]
+      summary: List bank accounts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Bank accounts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/BankAccount" },
+                    }
+
+  /settings/bank-account/store:
+    post:
+      tags: [Bank Accounts]
+      summary: Create bank account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankAccountCreate"
+      responses:
+        "200":
+          description: Bank account createde
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+
+  /settings/bank-account/update/{uuid}:
+    put:
+      tags: [Bank Accounts]
+      summary: Update bank account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankAccountCreate"
+      responses:
+        "200":
+          description: Bank account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+
+  /settings/bank-account/show/{uuid}:
+    get:
+      tags: [Bank Accounts]
+      summary: Get bank account details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Bank account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+
+  /settings/bank-account/delete/{uuid}:
+    get:
+      tags: [Bank Accounts]
+      summary: Delete bank account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Bank account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /settings/bank-account/list:
+    get:
+      tags: [Bank Accounts]
+      summary: Get bank list
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Bank list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  banks:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Bank" },
+                    }
+
+  /settings/bank-account/drop-down:
+    get:
+      tags: [Bank Accounts]
+      summary: Get bank dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Bank dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  banks:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Bank" },
+                    }
+
+  # ==================== CONNECTOR ROUTES ====================
+  /settings/connector/update:
+    post:
+      tags: [Connectors]
+      summary: Update connector
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectorUpdate"
+      responses:
+        "200":
+          description: Connector updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connector"
+
+  /settings/connector/status/{type}:
+    patch:
+      tags: [Connectors]
+      summary: Change connector status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connector"
+
+  /settings/connector/show/{type}:
+    get:
+      tags: [Connectors]
+      summary: Get connector details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Connector details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connector"
+
+  /settings/connector/access-token/{type}:
+    get:
+      tags: [Connectors]
+      summary: Get connector access token
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+
+  /settings/connector/drop-down:
+    get:
+      tags: [Connectors]
+      summary: Get connector dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Connector dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connectors:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Connector" },
+                    }
+
+  # ==================== SUPPLIER ROUTES ====================
+  /settings/supplier/index:
+    get:
+      tags: [Suppliers]
+      summary: List suppliers
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Suppliers list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suppliers:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Supplier" },
+                    }
+
+  /settings/supplier/store:
+    post:
+      tags: [Suppliers]
+      summary: Create supplier
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierCreate"
+      responses:
+        "200":
+          description: Supplier created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+
+  /settings/supplier/update/{uuid}:
+    put:
+      tags: [Suppliers]
+      summary: Update supplier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierCreate"
+      responses:
+        "200":
+          description: Supplier updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+
+  /settings/supplier/status/{uuid}:
+    patch:
+      tags: [Suppliers]
+      summary: Change supplier status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+
+  /settings/supplier/show/{uuid}:
+    get:
+      tags: [Suppliers]
+      summary: Get supplier details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Supplier details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+
+  /settings/supplier/delete/{uuid}:
+    get:
+      tags: [Suppliers]
+      summary: Delete supplier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Supplier deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /settings/supplier/drop-down:
+    get:
+      tags: [Suppliers]
+      summary: Get supplier dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Supplier dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suppliers:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Supplier" },
+                    }
+
+  # ==================== AIRLINE ROUTES ====================
+  /settings/airline/index:
+    get:
+      tags: [Airlines]
+      summary: List airlines
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Airlines list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  airlines:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Airline" },
+                    }
+
+  /settings/airline/store:
+    post:
+      tags: [Airlines]
+      summary: Create airline
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AirlineCreate"
+      responses:
+        "200":
+          description: Airline created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airline"
+
+  /settings/airline/update/{uuid}:
+    put:
+      tags: [Airlines]
+      summary: Update airline
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AirlineCreate"
+      responses:
+        "200":
+          description: Airline updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airline"
+
+  /settings/airline/status/{uuid}:
+    patch:
+      tags: [Airlines]
+      summary: Change airline status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airline"
+
+  /settings/airline/show/{uuid}:
+    get:
+      tags: [Airlines]
+      summary: Get airline details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Airline details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airline"
+
+  /settings/airline/delete/{uuid}:
+    get:
+      tags: [Airlines]
+      summary: Delete airline
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Airline deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /settings/airline/drop-down:
+    get:
+      tags: [Airlines]
+      summary: Get airline dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Airline dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  airlines:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Airline" },
+                    }
+
+  # ==================== AIRPORT ROUTES ====================
+  /settings/airport/index:
+    get:
+      tags: [Airports]
+      summary: List airports
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Airports list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  airports:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Airport" },
+                    }
+
+  /settings/airport/store:
+    post:
+      tags: [Airports]
+      summary: Create airport
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AirportCreate"
+      responses:
+        "200":
+          description: Airport created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airport"
+
+  /settings/airport/update/{uuid}:
+    put:
+      tags: [Airports]
+      summary: Update airport
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AirportCreate"
+      responses:
+        "200":
+          description: Airport updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airport"
+
+  /settings/airport/status/{uuid}:
+    patch:
+      tags: [Airports]
+      summary: Change airport status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airport"
+
+  /settings/airport/show/{uuid}:
+    get:
+      tags: [Airports]
+      summary: Get airport details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Airport details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Airport"
+
+  /settings/airport/delete/{uuid}:
+    get:
+      tags: [Airports]
+      summary: Delete airport
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Airport deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /locations:
+    get:
+      tags: [Airports]
+      summary: Get locations dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Locations dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Location" },
+                    }
+
+  # ==================== COUNTRY ROUTES ====================
+  /settings/country/index:
+    get:
+      tags: [Countries]
+      summary: List countries
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Countries list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countries:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Country" },
+                    }
+
+  /settings/country/store:
+    post:
+      tags: [Countries]
+      summary: Create country
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CountryCreate"
+      responses:
+        "200":
+          description: Country created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Country"
+
+  /settings/country/update/{uuid}:
+    put:
+      tags: [Countries]
+      summary: Update country
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CountryCreate"
+      responses:
+        "200":
+          description: Country updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Country"
+
+  /settings/country/status/{uuid}:
+    patch:
+      tags: [Countries]
+      summary: Change country status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Country"
+
+  /settings/country/show/{uuid}:
+    get:
+      tags: [Countries]
+      summary: Get country details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Country details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Country"
+
+  /settings/country/delete/{uuid}:
+    get:
+      tags: [Countries]
+      summary: Delete country
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Country deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /settings/country/drop-down:
+    get:
+      tags: [Countries]
+      summary: Get country dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Country dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countries:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Country" },
+                    }
+
+  # ==================== CITY ROUTES ====================
+  /settings/city/index:
+    get:
+      tags: [Cities]
+      summary: List cities
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cities list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cities:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/City" },
+                    }
+
+  /settings/city/store:
+    post:
+      tags: [Cities]
+      summary: Create city
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CityCreate"
+      responses:
+        "200":
+          description: City created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+
+  /settings/city/update/{uuid}:
+    put:
+      tags: [Cities]
+      summary: Update city
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CityCreate"
+      responses:
+        "200":
+          description: City updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+
+  /settings/city/status/{uuid}:
+    patch:
+      tags: [Cities]
+      summary: Change city status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+
+  /settings/city/show/{uuid}:
+    get:
+      tags: [Cities]
+      summary: Get city details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: City details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+
+  /settings/city/delete/{uuid}:
+    get:
+      tags: [Cities]
+      summary: Delete city
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: City deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== NEWS & ALERTS ROUTES ====================
+  /settings/news/index:
+    get:
+      tags: [News & Alerts]
+      summary: List news & alerts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: News & alerts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  news:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/News" },
+                    }
+
+  /settings/news/store:
+    post:
+      tags: [News & Alerts]
+      summary: Create news/alert
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsCreate"
+      responses:
+        "200":
+          description: News/alert created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/News"
+
+  /settings/news/update/{uuid}:
+    put:
+      tags: [News & Alerts]
+      summary: Update news/alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsCreate"
+      responses:
+        "200":
+          description: News/alert updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/News"
+
+  /settings/news/show/{uuid}:
+    get:
+      tags: [News & Alerts]
+      summary: Get news/alert details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: News/alert details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/News"
+
+  /settings/news/delete/{uuid}:
+    get:
+      tags: [News & Alerts]
+      summary: Delete news/alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: News/alert deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== AIRLINE MARGIN ROUTES ====================
+  /settings/airline-margin/index:
+    get:
+      tags: [Margins]
+      summary: List airline margins
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Airline margins list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  margins:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/AirlineMargin" },
+                    }
+
+  /settings/airline-margin/store:
+    post:
+      tags: [Margins]
+      summary: Create airline margin
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AirlineMarginCreate"
+      responses:
+        "200":
+          description: Airline margin created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirlineMargin"
+
+  /settings/airline-margin/update/{uuid}:
+    put:
+      tags: [Margins]
+      summary: Update airline margin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AirlineMarginCreate"
+      responses:
+        "200":
+          description: Airline margin updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirlineMargin"
+
+  /settings/airline-margin/show/{uuid}:
+    get:
+      tags: [Margins]
+      summary: Get airline margin details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Airline margin details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirlineMargin"
+
+  /settings/airline-margin/delete/{uuid}:
+    get:
+      tags: [Margins]
+      summary: Delete airline margin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Airline margin deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== BRANCH ROUTES ====================
+  /organization/branch/index:
+    get:
+      tags: [Organization]
+      summary: List branches
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Branches list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  branches:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Branch" },
+                    }
+
+  /organization/branch/store:
+    post:
+      tags: [Organization]
+      summary: Create branch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchCreate"
+      responses:
+        "200":
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+
+  /organization/branch/update/{uuid}:
+    put:
+      tags: [Organization]
+      summary: Update branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchCreate"
+      responses:
+        "200":
+          description: Branch updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+
+  /organization/branch/delete/{uuid}:
+    get:
+      tags: [Organization]
+      summary: Delete branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Branch deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /organization/branch/status-change/{uuid}:
+    patch:
+      tags: [Organization]
+      summary: Change branch status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+
+  /organization/branch/drop-down:
+    get:
+      tags: [Organization]
+      summary: Get branch dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Branch dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  branches:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Branch" },
+                    }
+
+  /organization/branch/drop-down-by-type:
+    post:
+      tags: [Organization]
+      summary: Get branch dropdown by type
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: string }
+      responses:
+        "200":
+          description: Branch dropdown by type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  branches:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Branch" },
+                    }
+
+  # ==================== AGENCY ROUTES ====================
+  /organization/agency/index:
+    get:
+      tags: [Organization]
+      summary: List agencies
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agencies list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agencies:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Agency" },
+                    }
+
+  /organization/agency/store:
+    post:
+      tags: [Organization]
+      summary: Create agency
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyCreate"
+      responses:
+        "200":
+          description: Agency created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+
+  /organization/agency/update/{uuid}:
+    put:
+      tags: [Organization]
+      summary: Update agency
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyCreate"
+      responses:
+        "200":
+          description: Agency updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+
+  /organization/agency/delete/{uuid}:
+    get:
+      tags: [Organization]
+      summary: Delete agency
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Agency deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /organization/agency/status-change/{uuid}:
+    patch:
+      tags: [Organization]
+      summary: Change agency status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+
+  /organization/agency/drop-down:
+    get:
+      tags: [Organization]
+      summary: Get agency dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agency dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agencies:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Agency" },
+                    }
+
+  # ==================== EMPLOYEE ROUTES ====================
+  /organization/employee/index:
+    get:
+      tags: [Organization]
+      summary: List employees
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Employees list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  employees:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Employee" },
+                    }
+
+  /organization/employee/store:
+    post:
+      tags: [Organization]
+      summary: Create employee
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeCreate"
+      responses:
+        "200":
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+
+  /organization/employee/update/{uuid}:
+    put:
+      tags: [Organization]
+      summary: Update employee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeCreate"
+      responses:
+        "200":
+          description: Employee updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+
+  /organization/employee/delete/{uuid}:
+    get:
+      tags: [Organization]
+      summary: Delete employee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Employee deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /organization/employee/status-change/{uuid}:
+    patch:
+      tags: [Organization]
+      summary: Change employee status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+
+  # ==================== AGENT MANAGEMENT ROUTES ====================
+  /agent-management/index:
+    get:
+      tags: [Agents]
+      summary: List agents
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agents list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Agent" },
+                    }
+
+  /agent-management/store:
+    post:
+      tags: [Agents]
+      summary: Create agent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentCreate"
+      responses:
+        "200":
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+
+  /agent-management/update/{uuid}:
+    put:
+      tags: [Agents]
+      summary: Update agent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentCreate"
+      responses:
+        "200":
+          description: Agent updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+
+  /agent-management/delete/{uuid}:
+    get:
+      tags: [Agents]
+      summary: Delete agent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Agent deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /agent-management/status-change/{uuid}:
+    patch:
+      tags: [Agents]
+      summary: Change agent status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+
+  # ==================== DASHBOARD ROUTES ====================
+  /dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Get statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Stats data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/sale-statistics:
+    get:
+      tags: [Dashboard]
+      summary: Get sales statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sales data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalesStatistics"
+
+  # ==================== MARGIN MANAGEMENT ROUTES ====================
+  /margin/branch-margin:
+    get:
+      tags: [Financial]
+      summary: Get branch margins
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Margins data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BranchMargins"
+
+  /margin/assign-margin-branch:
+    post:
+      tags: [Financial]
+      summary: Assign margin to branch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignMargin"
+      responses:
+        "200":
+          description: Margin assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /margin/assign-to-branch-by-airline:
+    post:
+      tags: [Financial]
+      summary: Assign margin to branch by airline
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignMarginByAirline"
+      responses:
+        "200":
+          description: Margin assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /margin/branch-margins:
+    get:
+      tags: [Financial]
+      summary: Get branch margins list
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Branch margins
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BranchMarginsList"
+
+  /margin/agencies-margins/{uuid}:
+    get:
+      tags: [Financial]
+      summary: Get agency margins
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Agency margins
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyMargins"
+
+  /margin/agency-margin-assign/{uuid}:
+    post:
+      tags: [Financial]
+      summary: Assign margin to agency
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignAgencyMargin"
+      responses:
+        "200":
+          description: Margin assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /margin/agency-airline-margin-list:
+    get:
+      tags: [Financial]
+      summary: Get agency airline margin list
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agency airline margins
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyAirlineMargins"
+
+  # ==================== REFUND REQUEST ROUTES ====================
+  /refund-request/generate/{booking_id}:
+    get:
+      tags: [Refunds]
+      summary: Generate refund request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Refund request generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundRequest"
+
+  /refund-request/refund-request:
+    get:
+      tags: [Refunds]
+      summary: Get organization refund requests
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Refund requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/RefundRequest" },
+                    }
+
+  /refund-request/my-refund-request:
+    get:
+      tags: [Refunds]
+      summary: Get agency refund requests
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Refund requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/RefundRequest" },
+                    }
+
+  /refund-request/show-fare-rule/{booking_id}:
+    get:
+      tags: [Refunds]
+      summary: Show fare rules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Fare rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FareRules"
+
+  /refund-request/reject/{booking_id}:
+    get:
+      tags: [Refunds]
+      summary: Reject refund request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Refund rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /refund-request/make-refund/{booking_id}:
+    post:
+      tags: [Refunds]
+      summary: Make refund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MakeRefund"
+      responses:
+        "200":
+          description: Refund processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== DEPOSIT ROUTES ====================
+  /deposits/agency-list:
+    get:
+      tags: [Deposits]
+      summary: List agency deposits
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agency deposits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deposits:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Deposit" },
+                    }
+
+  /deposits/org-list:
+    get:
+      tags: [Deposits]
+      summary: List organization deposits
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Organization deposits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deposits:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Deposit" },
+                    }
+
+  /deposits/request:
+    post:
+      tags: [Deposits]
+      summary: Request deposit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositRequest"
+      responses:
+        "200":
+          description: Deposit requested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /deposits/reject/{uuid}:
+    post:
+      tags: [Deposits]
+      summary: Reject deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        "200":
+          description: Deposit rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /deposits/accept/{uuid}:
+    post:
+      tags: [Deposits]
+      summary: Accept deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number }
+      responses:
+        "200":
+          description: Deposit accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  # ==================== PASSPORT ROUTES ====================
+  /passport-info:
+    post:
+      tags: [Passport]
+      summary: Upload passport info
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PassportInfo"
+      responses:
+        "200":
+          description: Passport info processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassportResponse"
+
+  # ==================== ACCOUNT HEAD ROUTES ====================
+  /account-head/index:
+    get:
+      tags: [Account]
+      summary: List account heads
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Account heads list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_heads:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/AccountHead" },
+                    }
+
+  /account-head/store:
+    post:
+      tags: [Account]
+      summary: Create account head
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountHeadCreate"
+      responses:
+        "200":
+          description: Account head created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountHead"
+
+  /account-head/update/{uuid}:
+    put:
+      tags: [Account]
+      summary: Update account head
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountHeadCreate"
+      responses:
+        "200":
+          description: Account head updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountHead"
+
+  /account-head/status/{uuid}:
+    patch:
+      tags: [Account]
+      summary: Change account head status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountHead"
+
+  /account-head/delete/{uuid}:
+    get:
+      tags: [Account]
+      summary: Delete account head
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Account head deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /account-head/drop-down:
+    get:
+      tags: [Account]
+      summary: Get account head dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Account head dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_heads:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/AccountHead" },
+                    }
+
+  # ==================== CHART OF ACCOUNT ROUTES ====================
+  /chart-of-account/index:
+    get:
+      tags: [Account]
+      summary: List chart of accounts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Chart of accounts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/ChartOfAccount" },
+                    }
+
+  /chart-of-account/store:
+    post:
+      tags: [Account]
+      summary: Create chart of account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChartOfAccountCreate"
+      responses:
+        "200":
+          description: Chart of account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartOfAccount"
+
+  /chart-of-account/update/{uuid}:
+    put:
+      tags: [Account]
+      summary: Update chart of account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChartOfAccountCreate"
+      responses:
+        "200":
+          description: Chart of account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartOfAccount"
+
+  /chart-of-account/status/{uuid}:
+    patch:
+      tags: [Account]
+      summary: Change chart of account status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: boolean }
+      responses:
+        "200":
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartOfAccount"
+
+  /chart-of-account/delete/{uuid}:
+    get:
+      tags: [Account]
+      summary: Delete chart of account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Chart of account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /chart-of-account/drop-down:
+    get:
+      tags: [Account]
+      summary: Get chart of account dropdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Chart of account dropdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/ChartOfAccount" },
+                    }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        uuid: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        email_verified_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UserProfile:
+      type: object
+      properties:
+        id: { type: integer }
+        uuid: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        avatar: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        avatar: { type: string, format: binary, nullable: true }
+
+    FinancialProfile:
+      type: object
+      properties:
+        balance: { type: number, format: float }
+        credit_limit: { type: number, format: float }
+        temporary_limit: { type: number, format: float, nullable: true }
+        temporary_limit_expiry:
+          { type: string, format: date-time, nullable: true }
+
+    FlightSearch:
+      type: object
+      properties:
+        origin: { type: string }
+        destination: { type: string }
+        departure_date: { type: string, format: date }
+        return_date: { type: string, format: date, nullable: true }
+        adults: { type: integer }
+        children: { type: integer, nullable: true }
+        infants: { type: integer, nullable: true }
+        cabin_class:
+          { type: string, enum: [economy, premium_economy, business, first] }
+        trip_type: { type: string, enum: [oneway, roundtrip, multicity] }
+
+    Flight:
+      type: object
+      properties:
+        id: { type: string }
+        airline: { type: string }
+        flight_number: { type: string }
+        departure: { type: string, format: date-time }
+        arrival: { type: string, format: date-time }
+        origin: { type: string }
+        destination: { type: string }
+        price: { type: number, format: float }
+        cabin_class: { type: string }
+        seats_available: { type: integer }
+
+    FlightPricing:
+      type: object
+      properties:
+        price: { type: number, format: float }
+        taxes: { type: number, format: float }
+        fees: { type: number, format: float }
+        total: { type: number, format: float }
+        currency: { type: string }
+        baggage_allowance: { type: string }
+        refundable: { type: boolean }
+        change_penalty: { type: number, format: float, nullable: true }
+
+    FlightBooking:
+      type: object
+      properties:
+        flight_id: { type: string }
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Passenger"
+
+    Passenger:
+      type: object
+      properties:
+        type: { type: string, enum: [adult, child, infant] }
+        first_name: { type: string }
+        last_name: { type: string }
+        gender: { type: string, enum: [male, female, other] }
+        date_of_birth: { type: string, format: date }
+        passport_number: { type: string, nullable: true }
+        passport_expiry: { type: string, format: date, nullable: true }
+        nationality: { type: string, nullable: true }
+
+    BookingResponse:
+      type: object
+      properties:
+        booking_id: { type: string }
+        status: { type: string }
+        pnr: { type: string }
+        price: { type: number, format: float }
+        currency: { type: string }
+        flights:
+          type: array
+          items:
+            $ref: "#/components/schemas/Flight"
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Passenger"
+
+    BaggageSelection:
+      type: object
+      properties:
+        booking_id: { type: string }
+        passengers:
+          type: array
+          items:
+            type: object
+            properties:
+              passenger_id: { type: string }
+              baggage_allowance: { type: string }
+
+    SeatSelection:
+      type: object
+      properties:
+        booking_id: { type: string }
+        passengers:
+          type: array
+          items:
+            type: object
+            properties:
+              passenger_id: { type: string }
+              seat_number: { type: string }
+              seat_type: { type: string }
+
+    MealSelection:
+      type: object
+      properties:
+        booking_id: { type: string }
+        passengers:
+          type: array
+          items:
+            type: object
+            properties:
+              passenger_id: { type: string }
+              meal_option: { type: string }
+
+    FlyDubaiAnci:
+      type: object
+      properties:
+        booking_id: { type: string }
+        anci: { type: string }
+
+    BookingDetails:
+      type: object
+      properties:
+        id: { type: string }
+        pnr: { type: string }
+        status: { type: string }
+        price: { type: number, format: float }
+        currency: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        flights:
+          type: array
+          items:
+            $ref: "#/components/schemas/Flight"
+        passengers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Passenger"
+
+    BookingConfirm:
+      type: object
+      properties:
+        booking_id: { type: string }
+        payment_method: { type: string }
+        payment_details: { type: object }
+
+    BankAccount:
+      type: object
+      properties:
+        uuid: { type: string }
+        bank_name: { type: string }
+        account_title: { type: string }
+        account_number: { type: string }
+        iban: { type: string }
+        branch_code: { type: string }
+        branch_address: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    BankAccountCreate:
+      type: object
+      properties:
+        bank_name: { type: string }
+        account_title: { type: string }
+        account_number: { type: string }
+        iban: { type: string }
+        branch_code: { type: string }
+        branch_address: { type: string }
+        status: { type: boolean }
+
+    Bank:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string }
+
+    Connector:
+      type: object
+      properties:
+        type: { type: string }
+        name: { type: string }
+        status: { type: boolean }
+        credentials: { type: object }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ConnectorUpdate:
+      type: object
+      properties:
+        type: { type: string }
+        credentials: { type: object }
+
+    Supplier:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        contact_person: { type: string }
+        contact_number: { type: string }
+        email: { type: string, format: email }
+        address: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    SupplierCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        contact_person: { type: string }
+        contact_number: { type: string }
+        email: { type: string, format: email }
+        address: { type: string }
+        status: { type: boolean }
+
+    Airline:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        logo: { type: string, nullable: true }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AirlineCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        logo: { type: string, format: binary, nullable: true }
+        status: { type: boolean }
+
+    Airport:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        city: { type: string }
+        country: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AirportCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        city: { type: string }
+        country: { type: string }
+        status: { type: boolean }
+
+    Location:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string }
+        type: { type: string, enum: [airport, city] }
+        city: { type: string, nullable: true }
+        country: { type: string, nullable: true }
+
+    Country:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        phone_code: { type: string }
+        currency: { type: string }
+        currency_symbol: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CountryCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        phone_code: { type: string }
+        currency: { type: string }
+        currency_symbol: { type: string }
+        status: { type: boolean }
+
+    City:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        country: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CityCreate:
+      type: object
+      properties:
+        name: { type: string }
+        country: { type: string }
+        status: { type: boolean }
+
+    News:
+      type: object
+      properties:
+        uuid: { type: string }
+        title: { type: string }
+        description: { type: string }
+        type: { type: string, enum: [news, alert] }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    NewsCreate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        type: { type: string, enum: [news, alert] }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time, nullable: true }
+
+    AirlineMargin:
+      type: object
+      properties:
+        uuid: { type: string }
+        airline: { type: string }
+        margin: { type: number, format: float }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AirlineMarginCreate:
+      type: object
+      properties:
+        airline: { type: string }
+        margin: { type: number, format: float }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time, nullable: true }
+
+    Branch:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        address: { type: string }
+        contact_number: { type: string }
+        email: { type: string, format: email }
+        manager: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    BranchCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        address: { type: string }
+        contact_number: { type: string }
+        email: { type: string, format: email }
+        manager: { type: string }
+        status: { type: boolean }
+
+    Agency:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        address: { type: string }
+        contact_number: { type: string }
+        email: { type: string, format: email }
+        manager: { type: string }
+        branch: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AgencyCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        address: { type: string }
+        contact_number: { type: string }
+        email: { type: string, format: email }
+        manager: { type: string }
+        branch: { type: string }
+        status: { type: boolean }
+
+    Employee:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        address: { type: string }
+        position: { type: string }
+        branch: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    EmployeeCreate:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        address: { type: string }
+        position: { type: string }
+        branch: { type: string }
+        status: { type: boolean }
+        password: { type: string, format: password }
+
+    Agent:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        address: { type: string }
+        agency: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AgentCreate:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        address: { type: string }
+        agency: { type: string }
+        status: { type: boolean }
+        password: { type: string, format: password }
+
+    DashboardStats:
+      type: object
+      properties:
+        total_bookings: { type: integer }
+        total_sales: { type: number, format: float }
+        pending_bookings: { type: integer }
+        completed_bookings: { type: integer }
+        cancelled_bookings: { type: integer }
+
+    SalesStatistics:
+      type: object
+      properties:
+        labels: { type: array, items: { type: string } }
+        data: { type: array, items: { type: number, format: float } }
+
+    BranchMargins:
+      type: object
+      properties:
+        branch: { type: string }
+        margin: { type: number, format: float }
+
+    AssignMargin:
+      type: object
+      properties:
+        branch: { type: string }
+        margin: { type: number, format: float }
+
+    AssignMarginByAirline:
+      type: object
+      properties:
+        branch: { type: string }
+        airline: { type: string }
+        margin: { type: number, format: float }
+
+    BranchMarginsList:
+      type: object
+      properties:
+        branches:
+          type: array
+          items:
+            type: object
+            properties:
+              branch: { type: string }
+              margin: { type: number, format: float }
+
+    AgencyMargins:
+      type: object
+      properties:
+        agency: { type: string }
+        margin: { type: number, format: float }
+
+    AssignAgencyMargin:
+      type: object
+      properties:
+        agency: { type: string }
+        margin: { type: number, format: float }
+
+    AgencyAirlineMargins:
+      type: object
+      properties:
+        agency: { type: string }
+        airline: { type: string }
+        margin: { type: number, format: float }
+
+    RefundRequest:
+      type: object
+      properties:
+        booking_id: { type: string }
+        pnr: { type: string }
+        total_amount: { type: number, format: float }
+        refund_amount: { type: number, format: float }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    FareRules:
+      type: object
+      properties:
+        booking_id: { type: string }
+        rules: { type: array, items: { type: string } }
+
+    MakeRefund:
+      type: object
+      properties:
+        refund_amount: { type: number, format: float }
+        reason: { type: string }
+
+    Deposit:
+      type: object
+      properties:
+        uuid: { type: string }
+        amount: { type: number, format: float }
+        status: { type: string }
+        request_date: { type: string, format: date-time }
+        processed_date: { type: string, format: date-time, nullable: true }
+        processed_by: { type: string, nullable: true }
+        reason: { type: string, nullable: true }
+
+    DepositRequest:
+      type: object
+      properties:
+        amount: { type: number, format: float }
+        payment_method: { type: string }
+        transaction_reference: { type: string }
+
+    PassportInfo:
+      type: object
+      properties:
+        passport_number: { type: string }
+        passport_expiry: { type: string, format: date }
+        nationality: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        date_of_birth: { type: string, format: date }
+        gender: { type: string, enum: [male, female, other] }
+        passport_image: { type: string, format: binary }
+
+    PassportResponse:
+      type: object
+      properties:
+        message: { type: string }
+        passport_data: { type: object }
+
+    AccountHead:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        type: { type: string }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AccountHeadCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        type: { type: string }
+        status: { type: boolean }
+
+    ChartOfAccount:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        code: { type: string }
+        type: { type: string }
+        parent: { type: string, nullable: true }
+        status: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ChartOfAccountCreate:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string }
+        type: { type: string }
+        parent: { type: string, nullable: true }
+        status: { type: boolean }

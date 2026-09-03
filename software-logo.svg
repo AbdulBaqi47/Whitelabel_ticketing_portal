@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <!-- Plane icon -->
+  <g transform="translate(8, 12)">
+    <path d="M52 28 L18 38 L6 35 L14 28 L52 28Z" fill="#4F46E5"/>
+    <path d="M36 28 L48 14 L56 16 L44 28Z" fill="#818CF8"/>
+    <path d="M14 28 L10 20 L18 22 L18 28Z" fill="#818CF8"/>
+    <circle cx="3" cy="35" r="2" fill="#4F46E5" opacity="0.5"/>
+    <circle cx="0" cy="39" r="1.4" fill="#4F46E5" opacity="0.3"/>
+  </g>
+  <!-- Text: White -->
+  <text x="76" y="46" font-family="'Segoe UI', Inter, Arial, sans-serif" font-size="32" font-weight="700" fill="#1E1B4B" letter-spacing="-0.5">White</text>
+  <!-- Text: Label -->
+  <text x="190" y="46" font-family="'Segoe UI', Inter, Arial, sans-serif" font-size="32" font-weight="300" fill="#4F46E5" letter-spacing="-0.5">Label</text>
+  <!-- Tagline -->
+  <text x="76" y="62" font-family="'Segoe UI', Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="#6B7280" letter-spacing="2.5">B2B TRAVEL PORTAL</text>
+</svg>
