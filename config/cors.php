@@ -23,7 +23,7 @@ return [
 
     'allowed_origins' => array_filter(array_map(
         'trim',
-        explode(',', env('CORS_ALLOWED_ORIGINS', env('APP_FRONTEND_URL', 'https://b2bwhitelabelota.vercel.app')))
+        explode(',', env('CORS_ALLOWED_ORIGINS', env('APP_FRONTEND_URL', 'https:/b2bwhitelabelota.vercel.app')))
     )),
     
     'allowed_headers' => ['*'],
