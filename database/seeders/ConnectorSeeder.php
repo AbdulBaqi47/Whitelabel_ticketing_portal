@@ -22,5 +22,14 @@ class ConnectorSeeder extends Seeder
             'is_enable'=>true,
             'supplier_id'=>1
         ]);
+
+        \App\Models\Connector::create([
+            'name'=>'Mock Flights (Demo)',
+            'type'=>'MOCK',
+            'api_key'=>'mock_key',
+            'api_secret'=>'mock_secret',
+            'is_enable'=>false,
+            'supplier_id'=>1
+        ]);
     }
 }

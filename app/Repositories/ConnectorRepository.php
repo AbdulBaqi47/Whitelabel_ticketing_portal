@@ -24,6 +24,10 @@ class ConnectorRepository implements ConnectorRepositoryInterface
     }
 
     public function update(array $data){
+        if ($data['type'] === 'MOCK') {
+            $data['api_key'] = $data['api_key'] ?? 'mock_key';
+            $data['api_secret'] = $data['api_secret'] ?? 'mock_secret';
+        }
         return $this->model::updateOrCreate(['type' => $data['type']],[...$data, 'is_enable' => $data['is_enable'] ? 1 : 0]);
     }
 
@@ -35,6 +39,6 @@ class ConnectorRepository implements ConnectorRepositoryInterface
     }
 
     public function dropDown(){
-        return $this->model::select('id', 'name')->where(['is_enable'=>1])->get();
+        return $this->model::select('id', 'name', 'uuid', 'type')->where(['is_enable'=>1])->get();
     }
 }

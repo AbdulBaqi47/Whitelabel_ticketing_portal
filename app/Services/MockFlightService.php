@@ -201,4 +201,75 @@ class MockFlightService
             'terminal'     => '',
         ];
     }
+
+    public function createPassengerNameRecord(array $data, array $request): array
+    {
+        $pnr = 'MC' . strtoupper(substr(uniqid(), -4));
+        $booking = new \App\Models\Booking();
+        $booking->booking_id = random_id('MC');
+        $booking->phone_number = $request['contact_number'] ?? '03001234567';
+        $booking->status = 'confirmed';
+
+        $price = $data['price'] ?? [];
+        $baseFare = floatval(str_replace(',', '', $price['base_fare'] ?? '0'));
+        $tax = floatval(str_replace(',', '', $price['tax'] ?? '0'));
+        $grossFare = floatval(str_replace(',', '', $price['gross_amount'] ?? '0'));
+        $totalAmount = floatval(str_replace(',', '', $price['total_amount'] ?? ($grossFare ?: ($baseFare + $tax))));
+
+        $booking->base_fare = $baseFare;
+        $booking->tax = $tax;
+        $booking->gross_fare = $grossFare;
+        $booking->discount = 0;
+        $booking->total_amount = $totalAmount;
+        $booking->booking_pnr = $pnr;
+        $booking->provider_name = 'MOCK';
+        $booking->pnr_expiry = now()->addHours(24)->format('Y-m-d H:i:s');
+
+        $airlineIata = $data['airline']['iata_code'] ?? 'PK';
+        $airline = \App\Models\Airline::where('iata_code', $airlineIata)->first();
+        $booking->airline_id = $airline?->id ?? 1;
+
+        $mockConnector = \App\Models\Connector::where('type', 'MOCK')->first();
+        $booking->supplier_id = $mockConnector?->supplier_id ?? 1;
+
+        $firstLeg = $data['segment_data'][0] ?? $data['legs'][0] ?? [];
+        $booking->departure_airport = $firstLeg['departure']['airport']['name'] ?? ($firstLeg['origin'] ?? 'Origin');
+        $booking->departure_date_time = $firstLeg['departure']['departure_datetime'] ?? now()->addDays(3)->format('Y-m-d H:i:s');
+        $booking->arrival_airport = $firstLeg['arrival']['airport']['name'] ?? ($firstLeg['destination'] ?? 'Destination');
+        $booking->arrival_date_time = $firstLeg['arrival']['arrival_datetime'] ?? now()->addDays(3)->addHours(2)->format('Y-m-d H:i:s');
+
+        $booking->baggage = $data['baggage'] ?? null;
+        $booking->fare_break_down = $data['fare_break_down'] ?? null;
+        $booking->booking_class = 'Y';
+        $booking->is_refundable = 1;
+        $booking->applied_discount = 0;
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $booking->booked_by = $user?->id ?? 1;
+        $booking->org_id = $user?->org_id ?? null;
+        $booking->save();
+
+        if (!empty($request['passengers']) && is_array($request['passengers'])) {
+            foreach ($request['passengers'] as $pax) {
+                \App\Models\Passenger::create([
+                    'booking_id'           => $booking->id,
+                    'title'                => $pax['title'] ?? 'MR',
+                    'first_name'           => $pax['first_name'] ?? 'Demo',
+                    'last_name'            => $pax['last_name'] ?? 'Passenger',
+                    'date_of_birth'        => $pax['date_of_birth'] ?? '1990-01-01',
+                    'gender'               => $pax['gender'] ?? 'MALE',
+                    'type'                 => $pax['type'] ?? 'ADT',
+                    'passport_no'          => $pax['passport_no'] ?? 'A12345678',
+                    'passport_expiry_date' => $pax['passport_expiry_date'] ?? now()->addYears(5)->format('Y-m-d'),
+                    'nationality'          => $pax['nationality'] ?? 'PK',
+                ]);
+            }
+        }
+
+        return [
+            'status'  => true,
+            'data'    => $booking,
+            'message' => 'Demo Booking created successfully',
+        ];
+    }
 }

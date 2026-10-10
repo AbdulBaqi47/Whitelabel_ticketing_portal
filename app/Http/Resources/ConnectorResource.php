@@ -27,6 +27,7 @@ class ConnectorResource extends JsonResource
             'iata' => $this->iata,
             'client_ip' => $this->client_ip,
             'is_enable' => $this->is_enable,
+            'environment' => $this->environment ?? 'UAT',
             'supplier' => $this->whenLoaded('supplier'),
             'supplier_id'=>$this->supplier_id,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),

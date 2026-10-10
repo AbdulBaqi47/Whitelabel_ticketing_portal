@@ -21,36 +21,67 @@ class AirService extends AirAPI
      */
     public function searchFlights($request)
     {
-        $params = (new MakeRequest())->getAirAvailRequest($request);
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'Authorization'         =>  'Bearer ' . $this->access_token,
-            'X-AERO-SALES-CHANNEL'  => 'OTA',
-            'X-AERO-JOURNEY-TYPE'   => 'ONEWAY, RETURN',
-            'X-AERO-USERID'         => $this->auth['username'],
-            'X-AERO-AGENT-CODE'     => $this->auth['agent_code'],
-        ])->post($this->restbaseURL, $params);
-
-        $sectors = normalize_jinnah_sectors(json_decode($response, true));
-
-        $flights = [];
-
-        foreach ($sectors as $key => $sector) {
-            $price_params = (new MakeRequest())->priceRequest($request, $this->auth, $sector);
-
-            $prices = $this->fetch($this->baseURL, $price_params);
-
-            if($prices['body'] == ""){
-                continue;
-            }
-            $data = $this->transverseXML($prices['body']);
-
-            if($data && !empty($data['Body']['OTA_AirPriceRS']['Errors'])) {
-                continue;
-            }
-            $flights[] = (new \App\Services\FlyJinnahService\Parser)->searchFlightParser($data, $request, $prices['jsessionId']);
+        if (empty($this->auth) || empty($this->auth['username'])) {
+            return [];
         }
 
-        return $flights;
+        $token = $this->getAccessToken();
+        if (empty($token)) {
+            \Illuminate\Support\Facades\Log::warning('FlyJinnah searchFlights: No valid access token available');
+            return [];
+        }
+
+        try {
+            $params = (new MakeRequest())->getAirAvailRequest($request);
+            $response = \Illuminate\Support\Facades\Http::timeout(15)->withHeaders([
+                'Authorization'         => 'Bearer ' . $token,
+                'X-AERO-SALES-CHANNEL'  => 'OTA',
+                'X-AERO-JOURNEY-TYPE'   => 'ONEWAY, RETURN',
+                'X-AERO-USERID'         => $this->auth['username'],
+                'X-AERO-AGENT-CODE'     => $this->auth['agent_code'] ?? '',
+            ])->post($this->restbaseURL, $params);
+
+            if (!$response->successful()) {
+                \Illuminate\Support\Facades\Log::warning('FlyJinnah searchFlights HTTP error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+                return [];
+            }
+
+            $decoded = $response->json();
+            if (!is_array($decoded) || empty($decoded['ondWiseFlightCombinations'])) {
+                return [];
+            }
+
+            $sectors = normalize_jinnah_sectors($decoded);
+            if (!is_array($sectors) || empty($sectors)) {
+                return [];
+            }
+
+            $flights = [];
+
+            foreach ($sectors as $key => $sector) {
+                $price_params = (new MakeRequest())->priceRequest($request, $this->auth, $sector);
+
+                $prices = $this->fetch($this->baseURL, $price_params);
+
+                if (empty($prices['body'])) {
+                    continue;
+                }
+                $data = $this->transverseXML($prices['body']);
+
+                if ($data && !empty($data['Body']['OTA_AirPriceRS']['Errors'])) {
+                    continue;
+                }
+                $flights[] = (new \App\Services\FlyJinnahService\Parser)->searchFlightParser($data, $request, $prices['jsessionId']);
+            }
+
+            return $flights;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FlyJinnah searchFlights error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public function extras(array $confirmation_data)

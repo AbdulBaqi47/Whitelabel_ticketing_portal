@@ -18,7 +18,30 @@ class API
 
     public function __construct()
     {
+        $connector = \App\Models\Connector::whereType('SABRE')->first();
+        if ($connector) {
+            $this->baseURL = ($connector->environment === 'PROD')
+                ? 'https://api.platform.sabre.com'
+                : 'https://api.cert.platform.sabre.com';
+        }
+
         $access_token = \App\Models\AccessToken::where('type', 'bearer')->first();
+        if (!$access_token || empty($access_token->token) || \Carbon\Carbon::parse($access_token->expiry_date)->isPast()) {
+            if ($connector) {
+                $creds = $connector->getConnectorCreds();
+                $ERP = 'V1:' . $creds['api_key'] . ':' . $creds['pcc'] . ':' . ($creds['domain'] ?? 'AA');
+                $basicEncode = 'Basic ' . base64_encode(base64_encode($ERP) . ':' . base64_encode($creds['api_secret']));
+                $response = $this->getSabreAccessToken($basicEncode);
+                if (isset($response['token_type'])) {
+                    $access_token = \App\Models\AccessToken::updateOrCreate(['type' => $response['token_type']], [
+                        'type' => $response['token_type'],
+                        'token' => $response['access_token'],
+                        'expiry_date' => date('Y-m-d H:i:s', time() + $response['expires_in'])
+                    ]);
+                }
+            }
+        }
+
         if ($access_token) {
             $this->access_token = $access_token->token;
         }

@@ -21,6 +21,7 @@ class Connector extends Model
         'is_enable',
         'supplier_id',
         'type',
+        'environment',
     ];
 
     protected function casts(): array
@@ -45,6 +46,8 @@ class Connector extends Model
             case 'ONEAPI':
                 return $this->getFlyJinnahCreds();
                 break;
+            case 'MOCK':
+                return [];
         }
     }
 

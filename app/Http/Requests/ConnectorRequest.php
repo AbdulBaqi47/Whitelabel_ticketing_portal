@@ -29,7 +29,7 @@ class ConnectorRequest extends FormRequest
             'type' => [
                 'required',
                 'string',
-                Rule::in(['PIA_HITIT', 'SABRE', 'AIRBLUE_API', 'FLYDUBAI_API', 'ONEAPI', 'SABRE_NDC']),
+                Rule::in(['PIA_HITIT', 'SABRE', 'AIRBLUE_API', 'FLYDUBAI_API', 'ONEAPI', 'SABRE_NDC', 'MOCK']),
             ],
 
             'api_key' => ['required_if:type,PIA_HITIT,SABRE,AIRBLUE_API,FLYDUBAI_API,SABRE_NDC', 'string'],
@@ -50,6 +50,7 @@ class ConnectorRequest extends FormRequest
 
             'supplier_id' => ['required', 'integer'],
             'is_enable' => ['required', 'boolean'],
+            'environment' => ['nullable', 'string', 'in:UAT,PROD'],
         ];
     }
     public function withValidator(Validator $validator): void
