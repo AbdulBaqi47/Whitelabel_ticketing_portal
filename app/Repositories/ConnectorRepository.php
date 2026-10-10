@@ -28,6 +28,9 @@ class ConnectorRepository implements ConnectorRepositoryInterface
             $data['api_key'] = $data['api_key'] ?? 'mock_key';
             $data['api_secret'] = $data['api_secret'] ?? 'mock_secret';
         }
+        if (isset($data['iata']) && is_array($data['iata'])) {
+            $data['iata'] = json_encode($data['iata']);
+        }
         return $this->model::updateOrCreate(['type' => $data['type']],[...$data, 'is_enable' => $data['is_enable'] ? 1 : 0]);
     }
 
