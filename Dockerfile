@@ -36,16 +36,20 @@ RUN npm run build
 # -----------------------------
 # 3. Laravel runtime
 # -----------------------------
-FROM php:8.4-cli-bookworm
+FROM php:8.2-cli-bookworm
 
 WORKDIR /var/www/html
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev \
+        libxml2-dev \
+        ca-certificates \
     && docker-php-ext-install \
         pdo_mysql \
         zip \
+        soap \
+        bcmath \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=vendor /app/vendor ./vendor
