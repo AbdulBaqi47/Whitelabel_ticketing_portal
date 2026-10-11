@@ -10,7 +10,12 @@ class FlightController extends Controller
 {
     public function search(FlightSearchRequest $request)
     {
-        $connector = \App\Models\Connector::where('uuid', $request->uid)->first();
+        if ($request->uid === 'mock') {
+            $connector = \App\Models\Connector::where('type', 'MOCK')->where('is_enable', true)->first();
+        } else {
+            $connector = \App\Models\Connector::where('uuid', $request->uid)->first();
+        }
+
         $services = [
             'SABRE'         => [\App\Services\SabreService\API::class, 'bargainFinderMax'],
             'SABRE_NDC'     => [\App\Services\SabreService\API::class, 'bargainFinderMax'],
@@ -18,24 +23,32 @@ class FlightController extends Controller
             'AIRBLUE_API'   => [\App\Services\AirBlueService\AirService::class, 'searchFlights'],
             'FLYDUBAI_API'  => [\App\Services\FlyDubaiService\FlydubaiService::class, 'searchFlights'],
             'ONEAPI'        => [\App\Services\FlyJinnahService\AirService::class, 'searchFlights'],
+            'MOCK'          => [\App\Services\MockFlightService::class, 'searchFlights'],
         ];
 
         $isMock = false;
+        $flights = [];
 
-        if (!is_null($connector) && isset($services[$connector->type])) {
-            // Real connector exists — use it
-            [$class, $method] = $services[$connector->type];
-            $flights = (new $class())->$method($request->all());
-
-            // If real connector returns no results, fall back to mock
-            if (empty($flights) || $flights === false) {
+        // ONLY execute search if connector exists and its status is active (is_enable == true)
+        if (!is_null($connector) && $connector->is_enable) {
+            if ($connector->type === 'MOCK') {
                 $flights = (new \App\Services\MockFlightService)->searchFlights($request->all());
                 $isMock  = true;
+            } elseif (isset($services[$connector->type])) {
+                try {
+                    [$class, $method] = $services[$connector->type];
+                    $result = (new $class())->$method($request->all());
+
+                    // Real connectors NEVER fall back to mock data!
+                    // If real provider returns empty or fails, return empty list []
+                    $flights = (is_array($result) && !empty($result)) ? $result : [];
+                    $isMock  = false;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error("Connector [{$connector->type}] search failed: " . $e->getMessage());
+                    $flights = [];
+                    $isMock  = false;
+                }
             }
-        } else {
-            // No valid connector configured — use mock data for demo
-            $flights = (new \App\Services\MockFlightService)->searchFlights($request->all());
-            $isMock  = true;
         }
 
         // For mock flights, store each fare option in cache so booking/initiating works
@@ -55,6 +68,7 @@ class FlightController extends Controller
             }
         }
 
+        $result = [];
         $result['departure_date']   = manage_request($request, 'departure_date');
         $result['destination']      = \App\Models\Airport::where('iata_code', manage_request($request, 'destination'))
             ->select(['name', 'country', 'iata_code', 'municipality'])->first();

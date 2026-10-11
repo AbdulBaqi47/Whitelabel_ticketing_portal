@@ -20,6 +20,9 @@ class AirService extends AirAPI
         $connector = \App\Models\Connector::where('type', 'AIRBLUE_API')->first();
         if(!empty($connector)){
             $this->auth = $connector->getConnectorCreds();
+            $this->baseURL = ($connector->environment === 'PROD')
+                ? "https://ota4.zapways.com/v3.0/OTAAPI.asmx"
+                : "https://otatest.zapways.com/v3.0/OTAAPI.asmx";
         }else{
             $this->auth = null;
         }
@@ -27,24 +30,41 @@ class AirService extends AirAPI
 
     public function searchFlights($request)
     {
-        $params = $this->make_request->makeRequest($request, $this->auth);
-        $response = parent::soapCall($params);
-        if ($response) {
-            $response = $this->transverseXML($response);
+        if (empty($this->auth) || empty($this->auth['ID'])) {
+            return [];
+        }
 
-            $response = $response['Body']['AirLowFareSearchResponse']['AirLowFareSearchResult'];
+        try {
+            $params = $this->make_request->makeRequest($request, $this->auth);
+            $response = parent::soapCall($params);
+            if ($response) {
+                $response = $this->transverseXML($response);
 
-            if (!empty($response['Errors'])) {
-                return false;
+                $searchResult = $response['Body']['AirLowFareSearchResponse']['AirLowFareSearchResult'] ?? null;
+                if (!$searchResult) {
+                    \Illuminate\Support\Facades\Log::warning('AirBlue searchFlights: Empty search result');
+                    return [];
+                }
+
+                if (!empty($searchResult['Errors'])) {
+                    \Illuminate\Support\Facades\Log::warning('AirBlue searchFlights returned errors', ['errors' => $searchResult['Errors']]);
+                    return [];
+                }
+
+                if (empty($searchResult['PricedItineraries']) || !array_key_exists('PricedItinerary', $searchResult['PricedItineraries'])) {
+                    \Illuminate\Support\Facades\Log::info('AirBlue searchFlights: No PricedItinerary found for route');
+                    return [];
+                }
+
+                $groupedFlights = groupFlightsByItinerary($searchResult['PricedItineraries']['PricedItinerary']);
+                    
+                return (new Parser())->parseAirLowFareResponse($groupedFlights, $request);
             }
 
-            if(!array_key_exists('PricedItinerary', $response['PricedItineraries'])){
-                return false;
-            }
-
-            $groupedFlights = groupFlightsByItinerary($response['PricedItineraries']['PricedItinerary']);
-                
-            return (new Parser())->parseAirLowFareResponse($groupedFlights, $request);
+            return [];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('AirBlue searchFlights error: ' . $e->getMessage());
+            return [];
         }
     }
 

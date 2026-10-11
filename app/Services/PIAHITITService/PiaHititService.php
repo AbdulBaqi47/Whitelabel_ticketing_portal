@@ -17,6 +17,11 @@ class PiaHititService extends MakeRequest
         $connector = \App\Models\Connector::where('type', 'PIA_HITIT')->first();
         if(!empty($connector)){
             $this->auth = $connector->getConnectorCreds();
+            if (!empty($connector->connector_domain)) {
+                $this->baseURL = $connector->connector_domain;
+            } else {
+                $this->baseURL = "https://app.crane.aero/craneota/CraneOTAService?wsdl";
+            }
         }else{
             $this->auth = null;
         }
@@ -24,44 +29,61 @@ class PiaHititService extends MakeRequest
 
     public function searchFlights($request)
     {
+        if (empty($this->auth) || empty($this->auth['username'])) {
+            return false;
+        }
+
         $payload = $this->makeLowFareRequest($request, $this->auth);
         $response = $this->fetch($this->baseURL, $payload);
         
-        if(isset($response['faultstring'])) {
-            \Illuminate\Support\Facades\Log::info(['faultstring', $response['faultstring']]);
+        if (empty($response) || isset($response['faultstring']) || (isset($response['status']) && $response['status'] === false)) {
+            \Illuminate\Support\Facades\Log::warning('PIA Hitit searchFlights failed', [
+                'fault' => $response['faultstring'] ?? ($response['error'] ?? 'Unknown error'),
+            ]);
             return false;
-        }else {
-            return (new \App\Services\PIAHITITService\Parser())->parseLFSResponse($response, $request);
         }
-        
+
+        try {
+            return (new \App\Services\PIAHITITService\Parser())->parseLFSResponse($response, $request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('PIA Hitit parseLFSResponse error: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function createPassengerNameRecord($data, $request)
     {
-        $itinSegments = $this->segmentData($data, $request);
-        $params = $this->makeCreatePassengerNameRecordRequest($request, $itinSegments, $this->auth);
+        try {
+            $itinSegments = $this->segmentData($data, $request);
+            $params = $this->makeCreatePassengerNameRecordRequest($request, $itinSegments, $this->auth);
 
-        $client = new \SoapClient($this->baseURL, ['trace' => true, 'exceptions' => true]);
-        $response = $client->__soapCall('CreateBooking', [$params]);
-        $response = json_encode($response);
-        $response = json_decode($response, TRUE);
+            $client = new \SoapClient($this->baseURL, ['trace' => true, 'exceptions' => true]);
+            $response = $client->__soapCall('CreateBooking', [$params]);
+            $response = json_encode($response);
+            $response = json_decode($response, TRUE);
 
-        if (array_key_exists('AirBookingResponse', $response)) {
-            $CreatePassengerNameRecordRS = $response['AirBookingResponse'];
-            $ApplicationResults = $CreatePassengerNameRecordRS['airBookingList']['airReservation']['bookingReferenceIDList'];
-            if (!isset($ApplicationResults['ID'])) {
+            if (array_key_exists('AirBookingResponse', $response)) {
+                $CreatePassengerNameRecordRS = $response['AirBookingResponse'];
+                $ApplicationResults = $CreatePassengerNameRecordRS['airBookingList']['airReservation']['bookingReferenceIDList'];
+                if (!isset($ApplicationResults['ID'])) {
+                    return ['status'=>false,'message'=>'Failed to create PNR, something went wrong'];
+                }
+                if (array_key_exists('airItinerary', $CreatePassengerNameRecordRS['airBookingList']['airReservation'])) {
+                    $ItineraryRef = $ApplicationResults['ID'];
+                    $ticket_time_limit = $CreatePassengerNameRecordRS['airBookingList']['airReservation']['ticketTimeLimit'];
+                    $pnr_meta= array_merge($ApplicationResults, $CreatePassengerNameRecordRS['airBookingList']['ticketInfo']['totalAmount']);
+                    return ['status' => true, 'data' => $this->hititBooking($ItineraryRef,$pnr_meta,$ticket_time_limit,$data, $request)];
+                }
+            } else {
                 return ['status'=>false,'message'=>'Failed to create PNR, something went wrong'];
             }
-            if (array_key_exists('airItinerary', $CreatePassengerNameRecordRS['airBookingList']['airReservation'])) {
-                $ItineraryRef = $ApplicationResults['ID'];
-                $ticket_time_limit = $CreatePassengerNameRecordRS['airBookingList']['airReservation']['ticketTimeLimit'];
-                $pnr_meta= array_merge($ApplicationResults, $CreatePassengerNameRecordRS['airBookingList']['ticketInfo']['totalAmount']);
-                return ['status' => true, 'data' => $this->hititBooking($ItineraryRef,$pnr_meta,$ticket_time_limit,$data, $request)];
-            }
-        } else {
-            return ['status'=>false,'message'=>'Failed to create PNR, something went wrong'];
+        } catch (\SoapFault $e) {
+            \Illuminate\Support\Facades\Log::error('PIA Hitit createPassengerNameRecord SoapFault: ' . $e->getMessage());
+            return ['status' => false, 'message' => $e->getMessage()];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('PIA Hitit createPassengerNameRecord Error: ' . $e->getMessage());
+            return ['status' => false, 'message' => $e->getMessage()];
         }
-
     }
     public function cancelPNR($pnr_ref_list)
     {

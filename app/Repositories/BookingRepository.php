@@ -43,6 +43,10 @@ class BookingRepository implements BookingRepositoryInterface
                 $response = (new \App\Services\AirBlueService\AirService())->confirmBooking($data, $request);
                 break;
 
+            case 'MOCK':
+                $response = (new \App\Services\MockFlightService())->createPassengerNameRecord($data, $request);
+                break;
+
             default:
                 $response = ['error' => 'Unsupported API'];
                 break;

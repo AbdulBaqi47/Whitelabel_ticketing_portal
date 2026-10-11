@@ -237,7 +237,12 @@ class BookingController extends Controller
 
     public function getBooking(Request $request)
     {
-        dd(json_encode($this->bRI->getBooking($request->reservation_id)));
+        try {
+            $booking = $this->bRI->getBooking($request->reservation_id);
+            return Response::successResponse(200, 'Booking Details', $booking);
+        } catch (\Exception $e) {
+            return Response::errorResponse(500, $e->getMessage());
+        }
     }
 
     public function cancelBooking(Request $request)

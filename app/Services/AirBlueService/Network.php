@@ -35,9 +35,11 @@ trait Network
             CURLOPT_SSLKEY         => config_path('certificates/key_lima.pem'),
         ]);
         
-        $response       = curl_exec($curl);
+        $response = curl_exec($curl);
         if ($response === false) {
-            dd('Curl error: ' . curl_error($curl));
+            \Illuminate\Support\Facades\Log::warning('AirBlue cURL error: ' . curl_error($curl));
+            curl_close($curl);
+            return false;
         }
         curl_close($curl);
         return $response;

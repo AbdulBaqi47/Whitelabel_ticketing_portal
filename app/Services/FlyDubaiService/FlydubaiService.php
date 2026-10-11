@@ -13,58 +13,101 @@ class FlydubaiService
         $connector = \App\Models\Connector::where('type', 'FLYDUBAI_API')->first();
         if(!empty($connector)){
             $this->auth = $connector->getConnectorCreds();
+            if (!empty($connector->connector_domain) && filter_var($connector->connector_domain, FILTER_VALIDATE_URL)) {
+                $this->baseURL = rtrim($connector->connector_domain, '/');
+            } else {
+                $this->baseURL = 'https://api.flydubai.com';
+            }
         }else{
             $this->auth = null;
         }
     }
-    public function getAccessToken()
+    public function getAccessToken(): bool
     {
-		$payload = [
-			"client_id" => $this->auth['api_key'],
-			"client_secret" => $this->auth['api_secret'],
-			"grant_type" => 'password',
-			"password" => $this->auth['password'],
-			"scope" => 'res',
-			"username" => $this->auth['username'],
-		];
-		$response = \Illuminate\Support\Facades\Http::asForm()->post($this->baseURL.'/res/v3/authenticate', $payload);
-		$response = json_decode($response, true);
-		\App\Models\AccessToken::updateOrCreate(['type' => 'jwt'], [
-            'type' => 'jwt',
-            'token' => $response['access_token'],
-            'expiry_date' => date('Y-m-d H:i:s', time() + $response['expires_in'])
-        ]);
-	}
+        if (empty($this->auth) || empty($this->auth['api_key'])) {
+            return false;
+        }
+
+        try {
+            $payload = [
+                "client_id" => $this->auth['api_key'],
+                "client_secret" => $this->auth['api_secret'],
+                "grant_type" => 'password',
+                "password" => $this->auth['password'] ?? '',
+                "scope" => 'res',
+                "username" => $this->auth['username'] ?? '',
+            ];
+            $response = \Illuminate\Support\Facades\Http::timeout(10)->asForm()->post($this->baseURL.'/res/v3/authenticate', $payload);
+            if (!$response->successful()) {
+                \Illuminate\Support\Facades\Log::warning('FlyDubai authentication failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return false;
+            }
+
+            $data = $response->json();
+            if (empty($data['access_token'])) {
+                \Illuminate\Support\Facades\Log::warning('FlyDubai response missing access_token', ['data' => $data]);
+                return false;
+            }
+
+            \App\Models\AccessToken::updateOrCreate(['type' => 'jwt'], [
+                'type' => 'jwt',
+                'token' => $data['access_token'],
+                'expiry_date' => date('Y-m-d H:i:s', time() + ($data['expires_in'] ?? 3600))
+            ]);
+            return true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FlyDubai getAccessToken exception: ' . $e->getMessage());
+            return false;
+        }
+    }
 
 	public function searchFlights($request)
 	{
-		$this->getAccessToken();
-		$payload = (new \App\Services\FlyDubaiService\MakeRequest())->makeSearchFlightRequest($request, $this->auth);
-        $url = $this->baseURL . '/res/v3/pricing/flightswithfares';
-        $rawResponse = $this->fetch($url, $payload, 'POST');
-		if(array_key_exists('statusCode', $rawResponse) && $rawResponse['statusCode'] == 403){
-			return false;
-		}
+		if (!$this->getAccessToken()) {
+            return false;
+        }
 
-		if(array_key_exists('statusCode', $rawResponse) && $rawResponse['statusCode'] == 400 && $rawResponse['errorMessage'] == 'Bad Request- Invalid Route'){
-			return false;
-		}
+        try {
+            $payload = (new \App\Services\FlyDubaiService\MakeRequest())->makeSearchFlightRequest($request, $this->auth);
+            $url = $this->baseURL . '/res/v3/pricing/flightswithfares';
+            $rawResponse = $this->fetch($url, $payload, 'POST');
 
-		$rawResponse = $rawResponse['RetrieveFareQuoteDateRangeResponse']['RetrieveFareQuoteDateRangeResult'];
+            if (empty($rawResponse) || !is_array($rawResponse)) {
+                return false;
+            }
 
-		if(array_key_exists('SegmentDetails',$rawResponse)){
-			if(empty($rawResponse['SegmentDetails']['SegmentDetail'])){
-				return false;
-			}
-		}
+            if(array_key_exists('statusCode', $rawResponse) && $rawResponse['statusCode'] == 403){
+                return false;
+            }
 
-		if(!array_key_exists('ServiceDetails', $rawResponse)){
-			return false;
-		}
-		
-		$parsedResponse = (new \App\Services\FlyDubaiService\Parser)->searchFlightParser($rawResponse, $request);
+            if(array_key_exists('statusCode', $rawResponse) && $rawResponse['statusCode'] == 400){
+                return false;
+            }
 
-		return $parsedResponse;
+            if (!isset($rawResponse['RetrieveFareQuoteDateRangeResponse']['RetrieveFareQuoteDateRangeResult'])) {
+                return false;
+            }
+
+            $rawResponse = $rawResponse['RetrieveFareQuoteDateRangeResponse']['RetrieveFareQuoteDateRangeResult'];
+
+            if(array_key_exists('SegmentDetails',$rawResponse)){
+                if(empty($rawResponse['SegmentDetails']['SegmentDetail'])){
+                    return false;
+                }
+            }
+
+            if(!array_key_exists('ServiceDetails', $rawResponse)){
+                return false;
+            }
+            
+            return (new \App\Services\FlyDubaiService\Parser)->searchFlightParser($rawResponse, $request);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FlyDubai searchFlights error: ' . $e->getMessage());
+            return false;
+        }
 	}
 
 	function createBooking($data, $request) 

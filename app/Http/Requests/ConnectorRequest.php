@@ -29,27 +29,28 @@ class ConnectorRequest extends FormRequest
             'type' => [
                 'required',
                 'string',
-                Rule::in(['PIA_HITIT', 'SABRE', 'AIRBLUE_API', 'FLYDUBAI_API', 'ONEAPI', 'SABRE_NDC']),
+                Rule::in(['PIA_HITIT', 'SABRE', 'AIRBLUE_API', 'FLYDUBAI_API', 'ONEAPI', 'SABRE_NDC', 'MOCK']),
             ],
 
-            'api_key' => ['required_if:type,PIA_HITIT,SABRE,AIRBLUE_API,FLYDUBAI_API,SABRE_NDC', 'string'],
-            'api_secret' => ['required_if:type,PIA_HITIT,SABRE,AIRBLUE_API,FLYDUBAI_API,SABRE_NDC', 'string'],
+            'api_key' => ['nullable', 'required_if:type,PIA_HITIT,SABRE,AIRBLUE_API,FLYDUBAI_API,SABRE_NDC', 'string'],
+            'api_secret' => ['nullable', 'required_if:type,PIA_HITIT,SABRE,AIRBLUE_API,FLYDUBAI_API,SABRE_NDC', 'string'],
 
-            'client_ip' => ['required_if:type,PIA_HITIT', 'ip'],
+            'client_ip' => ['nullable', 'required_if:type,PIA_HITIT', 'ip'],
 
-            'connector_domain' => ['required_if:type,SABRE,FLYDUBAI_API,SABRE_NDC', 'string'],
-            'pcc' => ['required_if:type,SABRE,FLYDUBAI_API,SABRE_NDC', 'string'],
-            'printer' => ['required_if:type,SABRE,SABRE_NDC', 'string'],
+            'connector_domain' => ['nullable', 'required_if:type,SABRE,FLYDUBAI_API,SABRE_NDC', 'string'],
+            'pcc' => ['nullable', 'required_if:type,SABRE,FLYDUBAI_API,SABRE_NDC', 'string'],
+            'printer' => ['nullable', 'required_if:type,SABRE,SABRE_NDC', 'string'],
 
             // SABRE_NDC specific
-            'is_sabre_ndc' => ['required_if:type,SABRE_NDC', 'boolean'],
-            'iata' => ['required_if:type,SABRE_NDC', 'array'],
-            'iata.emirates' => ['required_if:type,SABRE_NDC', 'boolean'],
-            'iata.qatar_airways' => ['required_if:type,SABRE_NDC', 'boolean'],
-            'iata.saudi_airline' => ['required_if:type,SABRE_NDC', 'boolean'],
+            'is_sabre_ndc' => ['nullable', 'required_if:type,SABRE_NDC', 'boolean'],
+            'iata' => ['nullable', 'required_if:type,SABRE_NDC', 'array'],
+            'iata.emirates' => ['nullable', 'required_if:type,SABRE_NDC', 'boolean'],
+            'iata.qatar_airways' => ['nullable', 'required_if:type,SABRE_NDC', 'boolean'],
+            'iata.saudi_airline' => ['nullable', 'required_if:type,SABRE_NDC', 'boolean'],
 
             'supplier_id' => ['required', 'integer'],
             'is_enable' => ['required', 'boolean'],
+            'environment' => ['nullable', 'string', 'in:UAT,PROD'],
         ];
     }
     public function withValidator(Validator $validator): void
@@ -57,10 +58,12 @@ class ConnectorRequest extends FormRequest
         $validator->after(function (Validator $validator) {
             if ($this->input('type') === 'SABRE_NDC') {
                 $iata = $this->input('iata', []);
-                $anyEnabled = !empty($iata['emirates']) || !empty($iata['qatar_airways']) || !empty($iata['saudi_airline']);
+                if (is_array($iata)) {
+                    $anyEnabled = !empty($iata['emirates']) || !empty($iata['qatar_airways']) || !empty($iata['saudi_airline']);
 
-                if (!$anyEnabled) {
-                    $validator->errors()->add('iata', 'At least one airline must be enabled in SABRE NDC.');
+                    if (!$anyEnabled) {
+                        $validator->errors()->add('iata', 'At least one airline must be enabled in SABRE NDC.');
+                    }
                 }
             }
         });
