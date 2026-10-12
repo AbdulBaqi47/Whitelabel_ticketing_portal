@@ -36,7 +36,7 @@ RUN npm run build
 # -----------------------------
 # 3. Laravel runtime
 # -----------------------------
-FROM php:8.2-cli-bookworm
+FROM php:8.4-cli-bookworm
 
 WORKDIR /var/www/html
 
