@@ -38,6 +38,16 @@ class SupplierRepository implements SupplierRepositoryInterface
     }
 
     public function dropDown(){
-        return $this->model::query()->select('id','name')->where('status', true)->get();
+        $list = $this->model::query()->select('id', 'name')->where('status', true)->get();
+        if ($list->isEmpty()) {
+            $this->model::create([
+                'name' => 'BSP IATA FLIGHT BOOKING SUPPLIER',
+                'slug' => 'bsp-iata-flight-booking-supplier',
+                'description' => 'BSP IATA FLIGHT BOOKING SUPPLIER',
+                'status' => true,
+            ]);
+            return $this->model::query()->select('id', 'name')->where('status', true)->get();
+        }
+        return $list;
     }
 }
