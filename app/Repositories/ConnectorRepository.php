@@ -26,22 +26,38 @@ class ConnectorRepository implements ConnectorRepositoryInterface
             ];
 
             if (isset($validTypes[$type])) {
-                $model = $this->model::create([
+                $defaults = [
                     'name' => $validTypes[$type],
                     'type' => $type,
                     'environment' => 'UAT',
                     'is_enable' => false,
                     'supplier_id' => 1,
-                    'api_key' => $type === 'MOCK' ? 'mock_key' : null,
-                    'api_secret' => $type === 'MOCK' ? 'mock_secret' : null,
-                ]);
+                    'api_key' => $type === 'MOCK' ? 'mock_key' : '',
+                    'api_secret' => $type === 'MOCK' ? 'mock_secret' : '',
+                ];
+
+                if ($type === 'SABRE_NDC') {
+                    $sabre = $this->model::where('type', 'SABRE')->first();
+                    $defaults['api_key'] = $sabre?->api_key ?: '715063';
+                    $defaults['api_secret'] = $sabre?->api_secret ?: 'SSWRES99';
+                    $defaults['connector_domain'] = $sabre?->connector_domain ?: 'AA';
+                    $defaults['pcc'] = $sabre?->pcc ?: 'JJ7L';
+                    $defaults['printer'] = $sabre?->printer ?: 'BCE5F4';
+                    $defaults['iata'] = json_encode(['emirates' => false, 'qatar_airways' => false, 'saudi_airline' => false]);
+                }
+
+                $model = $this->model::create($defaults);
             } else {
                 return null;
             }
         }
 
         if ($model->type == 'SABRE_NDC') {
-            $model->iata = is_string($model->iata) ? json_decode($model->iata) : $model->iata;
+            if (empty($model->iata)) {
+                $model->iata = (object)['emirates' => false, 'qatar_airways' => false, 'saudi_airline' => false];
+            } else {
+                $model->iata = is_string($model->iata) ? json_decode($model->iata) : $model->iata;
+            }
             return $model;
         }
 
