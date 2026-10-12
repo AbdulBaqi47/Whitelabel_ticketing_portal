@@ -13,14 +13,39 @@ class ConnectorRepository implements ConnectorRepositoryInterface
 
     public function findByType(string $type)
     {
-        $model = $this->model::where(['type'=>$type])->first();
-        if($model->type == 'SABRE_NDC'){
-            $model->iata = json_decode($model->iata);
+        $model = $this->model::where(['type' => $type])->first();
+        if (!$model) {
+            $validTypes = [
+                'PIA_HITIT' => 'PIA (HITIT)',
+                'SABRE' => 'Sabre',
+                'AIRBLUE_API' => 'AIRBLUE_API',
+                'FLYDUBAI_API' => 'FLYDUBAI_API',
+                'ONEAPI' => 'ONEAPI',
+                'SABRE_NDC' => 'Sabre NDC',
+                'MOCK' => 'Mock Flights (Demo)',
+            ];
+
+            if (isset($validTypes[$type])) {
+                $model = $this->model::create([
+                    'name' => $validTypes[$type],
+                    'type' => $type,
+                    'environment' => 'UAT',
+                    'is_enable' => false,
+                    'supplier_id' => 1,
+                    'api_key' => $type === 'MOCK' ? 'mock_key' : null,
+                    'api_secret' => $type === 'MOCK' ? 'mock_secret' : null,
+                ]);
+            } else {
+                return null;
+            }
+        }
+
+        if ($model->type == 'SABRE_NDC') {
+            $model->iata = is_string($model->iata) ? json_decode($model->iata) : $model->iata;
             return $model;
         }
 
         return $model;
-
     }
 
     public function update(array $data){
