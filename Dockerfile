@@ -43,9 +43,13 @@ WORKDIR /var/www/html
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev \
+        libxml2-dev \
+        ca-certificates \
     && docker-php-ext-install \
         pdo_mysql \
         zip \
+        soap \
+        bcmath \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=vendor /app/vendor ./vendor
